@@ -717,7 +717,7 @@ def train(options, data, n_gpus, tf_save_dir, tf_log_dir,
         print_variable_summary()
 
         # calculate the mean of each gradient across all GPUs
-        grads = average_gradients(tower_grads, options['batch_size'], options)
+        grads = average_gradients(tower_grads, options['batch_size'], options) # tower_grads是长度为n_gpus的list，每个元素是那块gpu的(gradient,variable)的list
         grads, norm_summary_ops = clip_grads(grads, options, True, global_step)
         norm_summaries.extend(norm_summary_ops)
 
