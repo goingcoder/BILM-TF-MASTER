@@ -222,7 +222,7 @@ class Batcher(object):
         for k, sent in enumerate(sentences):
             length = len(sent) + 2
             char_ids_without_mask = self._lm_vocab.encode_chars(
-                sent, split=False)
+                sent, split=False)  # (length,max_token_length)
             # add one so that 0 is the mask value
             X_char_ids[k, :length, :] = char_ids_without_mask + 1
 

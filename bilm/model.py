@@ -662,7 +662,7 @@ def dump_bilm_embeddings(vocab_file, dataset_file, options_file,
         with open(dataset_file, 'r') as fin, h5py.File(outfile, 'w') as fout:
             for line in fin:
                 sentence = line.strip().split()
-                char_ids = batcher.batch_sentences([sentence])
+                char_ids = batcher.batch_sentences([sentence])  # (1, max_length, max_token_length)
                 embeddings = sess.run(
                     ops['lm_embeddings'], feed_dict={ids_placeholder: char_ids}
                 )
