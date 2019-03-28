@@ -118,7 +118,7 @@ class BidirectionalLanguageModel(object):
             token_embeddings = lm_graph.embedding
             layers = [
                 tf.concat([token_embeddings, token_embeddings], axis=2)
-            ]
+            ]  # (batch_size,max_time,projection_dim*2)
 
             n_lm_layers = len(lm_graph.lstm_outputs['forward'])
             for i in range(n_lm_layers):
@@ -127,7 +127,7 @@ class BidirectionalLanguageModel(object):
                         [lm_graph.lstm_outputs['forward'][i],
                          lm_graph.lstm_outputs['backward'][i]],
                         axis=-1
-                    )
+                    )  # (batch_size, max_time, cell.output_size*2)
                 )
 
             # The layers include the BOS/EOS tokens.  Remove them
@@ -152,8 +152,8 @@ class BidirectionalLanguageModel(object):
 
             # concatenate the layers
             lm_embeddings = tf.concat(
-                [tf.expand_dims(t, axis=1) for t in layers_without_bos_eos],
-                axis=1
+                [tf.expand_dims(t, axis=1) for t in layers_without_bos_eos],  # (batch_size,1,max_time-2,size)
+                axis=1  # (batch_size,n+1,max_time-2,projection_dim*2)
             )
 
             # get the mask op without bos/eos.
@@ -470,7 +470,7 @@ class BidirectionalLanguageModelGraph(object):
                 dtype=DTYPE,
             )
             self.embedding = tf.nn.embedding_lookup(self.embedding_weights,
-                                                self.ids_placeholder)
+                                                self.ids_placeholder) # (None,None,projection_dim)
 
 
     def _build_lstms(self):
@@ -492,10 +492,10 @@ class BidirectionalLanguageModelGraph(object):
 
         # the sequence lengths from input mask
         if self.use_character_inputs:
-            mask = tf.reduce_any(self.ids_placeholder > 0, axis=2)
+            mask = tf.reduce_any(self.ids_placeholder > 0, axis=2)  # (None,None,max_characters_per_token) -> (None,None)
         else:
-            mask = self.ids_placeholder > 0
-        sequence_lengths = tf.reduce_sum(tf.cast(mask, tf.int32), axis=1)
+            mask = self.ids_placeholder > 0  # (None,None)
+        sequence_lengths = tf.reduce_sum(tf.cast(mask, tf.int32), axis=1) # (None)
         batch_size = tf.shape(sequence_lengths)[0]
 
         # for each direction, we'll store tensors for each layer
@@ -566,7 +566,7 @@ class BidirectionalLanguageModelGraph(object):
                         layer_input,
                         sequence_length=sequence_lengths,
                         initial_state=tf.nn.rnn_cell.LSTMStateTuple(
-                            *batch_init_states),
+                            *batch_init_states), 
                     )
 
                 self.lstm_state_sizes[direction].append(lstm_cell.state_size)
@@ -589,7 +589,7 @@ class BidirectionalLanguageModelGraph(object):
                     for i in range(2):
                         new_state = tf.concat(
                             [final_state[i][:batch_size, :],
-                             init_states[i][batch_size:, :]], axis=0)
+                             init_states[i][batch_size:, :]], axis=0) # (max_batch_size,c_state_size)  (max_batch_size,h_state_size)
                         state_update_op = tf.assign(init_states[i], new_state)
                         update_ops.append(state_update_op)
     
@@ -620,7 +620,7 @@ def dump_token_embeddings(vocab_file, options_file, weight_file, outfile):
     embedding_op = model(ids_placeholder)['token_embeddings']
 
     n_tokens = vocab.size
-    embed_dim = int(embedding_op.shape[2])
+    embed_dim = int(embedding_op.shape[2]) # projection_dim
 
     embeddings = np.zeros((n_tokens, embed_dim), dtype=DTYPE)
 
