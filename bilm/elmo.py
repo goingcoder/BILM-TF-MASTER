@@ -31,7 +31,7 @@ def weight_layers(name, bilm_ops, l2_coef=None,
     '''
     def _l2_regularizer(weights):
         if l2_coef is not None:
-            return l2_coef * tf.reduce_sum(tf.square(weights))
+            return l2_coef * tf.reduce_sum(tf.square(weights)) # 平方和*正则化参数
         else:
             return 0.0
 
@@ -44,10 +44,10 @@ def weight_layers(name, bilm_ops, l2_coef=None,
 
     with tf.control_dependencies([lm_embeddings, mask]):
         # Cast the mask and broadcast for layer use.
-        mask_float = tf.cast(mask, 'float32')
-        broadcast_mask = tf.expand_dims(mask_float, axis=-1)
+        mask_float = tf.cast(mask, 'float32')  # (batch_size,max_time-2)
+        broadcast_mask = tf.expand_dims(mask_float, axis=-1) # (batch_size,max_time-2,1)
 
-        def _do_ln(x):
+        def _do_ln(x):  # (batch_size,max_time-2,projection_dim*2) 先做mask，再求mean和variance。
             # do layer normalization excluding the mask
             x_masked = x * broadcast_mask
             N = tf.reduce_sum(mask_float) * lm_dim
@@ -59,9 +59,9 @@ def weight_layers(name, bilm_ops, l2_coef=None,
             )
 
         if use_top_only:
-            layers = tf.split(lm_embeddings, n_lm_layers, axis=1)
+            layers = tf.split(lm_embeddings, n_lm_layers, axis=1) # n_lm_layers个tensor的list，每个tensor的shape为(batch_size,1,max_time-2,projection_dim*2)
             # just the top layer
-            sum_pieces = tf.squeeze(layers[-1], squeeze_dims=1)
+            sum_pieces = tf.squeeze(layers[-1], squeeze_dims=1) # (batch_size,max_time-2,projection_dim*2)
             # no regularization
             reg = 0.0
         else:
@@ -87,7 +87,7 @@ def weight_layers(name, bilm_ops, l2_coef=None,
                     pieces.append(w * _do_ln(tf.squeeze(t, squeeze_dims=1)))
                 else:
                     pieces.append(w * tf.squeeze(t, squeeze_dims=1))
-            sum_pieces = tf.add_n(pieces)
+            sum_pieces = tf.add_n(pieces) # (batch_size,max_time-2,projection_dim*2)
     
             # get the regularizer 
             reg = [

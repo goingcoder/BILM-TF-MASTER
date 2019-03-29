@@ -11,8 +11,8 @@ DATA_FIXTURES = 'tests/fixtures/data/'
 TRAIN_FIXTURES = 'tests/fixtures/train/'
 
 
-class TestVocabulary(unittest.TestCase):
-    def setUp(self):
+class TestVocabulary(unittest.TestCase):  # 继承unittest.TestCase
+    def setUp(self):  # 测试用例执行之前所做的操作
         words = ['<S>', '</S>', '<UNK>', 'the', '.']
         (_, tmp) = tempfile.mkstemp()
         with open(tmp, 'w') as fout:
@@ -33,7 +33,7 @@ class TestVocabulary(unittest.TestCase):
         expected = np.array([1, 4, 2, 3, 0], dtype=np.int32)
         self.assertTrue((ids == expected).all())
 
-    def tearDown(self):
+    def tearDown(self): # 测试用例执行之后所做的操作
         os.remove(self._tmp)
 
 class TestUnicodeCharsVocabulary(unittest.TestCase):
